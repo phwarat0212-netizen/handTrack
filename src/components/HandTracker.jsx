@@ -101,10 +101,10 @@ const HandTracker = () => {
     const x = point.x; 
     const y = point.y;
     
-    // Wider Y-zone for easier selection (y < 0.2)
-    if (y < 0.2) { 
-      const startX = 0.35;
-      const endX = 0.65;
+    // Shifted Y-zone down (y < 0.35) to match visual palette due to cropping
+    if (y < 0.35) { 
+      const startX = 0.32;
+      const endX = 0.68;
       if (x > startX && x < endX) {
         const relativeX = (x - startX) / (endX - startX);
         const index = Math.floor(relativeX * colors.length);
