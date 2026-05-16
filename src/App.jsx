@@ -6,7 +6,7 @@ function App() {
   return (
     <div id="root-container">
       <header className="app-header">
-        <h1>HandSense AI</h1>
+        <h1>HandTracking</h1>
         <p>Real-time Neural Hand Landmark Detection</p>
       </header>
 
