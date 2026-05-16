@@ -59,7 +59,7 @@ const HandTracker = () => {
     };
     initializeModels();
     return () => {
-      if (handLandmarker) handLandmarker.close();
+      if (handLandmarker) handModel?.close();
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, []);
@@ -97,11 +97,10 @@ const HandTracker = () => {
   };
 
   const checkAirSelection = (point) => {
-    // For UI (not mirrored), use raw point.x
     const x = point.x; 
     const y = point.y;
     
-    // Shifted Y-zone down (y < 0.35) to match visual palette due to cropping
+    // Y-zone for selection (y < 0.35)
     if (y < 0.35) { 
       const startX = 0.32;
       const endX = 0.68;
@@ -117,7 +116,7 @@ const HandTracker = () => {
               else setSelectedColor(color.hex);
               return 0;
             }
-            return prev + 10; // Slightly faster selection
+            return prev + 10;
           });
           return true;
         }
@@ -133,8 +132,8 @@ const HandTracker = () => {
     const ctx = drawingCanvasRef.current.getContext('2d');
     const { width, height } = drawingCanvasRef.current;
     
-    // For mirrored drawing, use 1 - point.x
-    const x = (1 - point.x) * width;
+    // Direct point mapping (CSS will handle the mirroring)
+    const x = point.x * width;
     const y = point.y * height;
     
     if (lastPointRef.current) {
@@ -143,7 +142,7 @@ const HandTracker = () => {
       ctx.lineWidth = 12;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.moveTo((1 - lastPointRef.current.x) * width, lastPointRef.current.y * height);
+      ctx.moveTo(lastPointRef.current.x * width, lastPointRef.current.y * height);
       ctx.lineTo(x, y);
       ctx.stroke();
     }
@@ -169,26 +168,24 @@ const HandTracker = () => {
           
           if (!inSelectionZone && isPointing(hand)) {
             drawOnCanvas(tip);
-            // Cursor for drawing (mirrored)
+            // Draw visual dot (direct mapping)
             ctx.fillStyle = selectedColorRef.current === 'CLEAR' ? '#fff' : selectedColorRef.current;
             ctx.beginPath();
-            ctx.arc((1 - tip.x) * width, tip.y * height, 15, 0, Math.PI * 2);
+            ctx.arc(tip.x * width, tip.y * height, 15, 0, Math.PI * 2);
             ctx.fill();
           } else {
             lastPointRef.current = null;
             if (inSelectionZone) {
-              // Selection cursor (raw x)
               ctx.strokeStyle = '#fff';
               ctx.lineWidth = 4;
               ctx.beginPath();
-              ctx.arc((1 - tip.x) * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgress / 100));
+              ctx.arc(tip.x * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgress / 100));
               ctx.stroke();
             } else {
-              // Hover cursor
               ctx.strokeStyle = 'rgba(255,255,255,0.4)';
               ctx.lineWidth = 2;
               ctx.beginPath();
-              ctx.arc((1 - tip.x) * width, tip.y * height, 10, 0, Math.PI * 2);
+              ctx.arc(tip.x * width, tip.y * height, 10, 0, Math.PI * 2);
               ctx.stroke();
             }
           }
