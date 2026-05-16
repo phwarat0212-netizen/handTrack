@@ -83,6 +83,7 @@ const HandTracker = () => {
   };
 
   const clearCanvas = () => {
+    if (!drawingCanvasRef.current) return;
     const ctx = drawingCanvasRef.current.getContext('2d');
     ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
   };
@@ -96,11 +97,14 @@ const HandTracker = () => {
   };
 
   const checkAirSelection = (point) => {
-    const x = 1 - point.x; 
+    // For UI (not mirrored), use raw point.x
+    const x = point.x; 
     const y = point.y;
-    if (y < 0.12) { 
-      const startX = 0.38;
-      const endX = 0.62;
+    
+    // Wider Y-zone for easier selection (y < 0.2)
+    if (y < 0.2) { 
+      const startX = 0.35;
+      const endX = 0.65;
       if (x > startX && x < endX) {
         const relativeX = (x - startX) / (endX - startX);
         const index = Math.floor(relativeX * colors.length);
@@ -113,7 +117,7 @@ const HandTracker = () => {
               else setSelectedColor(color.hex);
               return 0;
             }
-            return prev + 8;
+            return prev + 10; // Slightly faster selection
           });
           return true;
         }
@@ -125,17 +129,21 @@ const HandTracker = () => {
   };
 
   const drawOnCanvas = (point) => {
+    if (!drawingCanvasRef.current) return;
     const ctx = drawingCanvasRef.current.getContext('2d');
     const { width, height } = drawingCanvasRef.current;
-    const x = point.x * width;
+    
+    // For mirrored drawing, use 1 - point.x
+    const x = (1 - point.x) * width;
     const y = point.y * height;
+    
     if (lastPointRef.current) {
       ctx.beginPath();
       ctx.strokeStyle = selectedColorRef.current === 'CLEAR' ? '#00f2ff' : selectedColorRef.current;
       ctx.lineWidth = 12;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.moveTo(lastPointRef.current.x * width, lastPointRef.current.y * height);
+      ctx.moveTo((1 - lastPointRef.current.x) * width, lastPointRef.current.y * height);
       ctx.lineTo(x, y);
       ctx.stroke();
     }
@@ -147,33 +155,40 @@ const HandTracker = () => {
       const startTimeMs = performance.now();
       const ctx = canvasRef.current.getContext('2d');
       const { width, height } = canvasRef.current;
+      
       ctx.drawImage(videoRef.current, 0, 0, width, height);
       ctx.drawImage(drawingCanvasRef.current, 0, 0, width, height);
+      
       if (handLandmarker) {
         const handResults = await handLandmarker.detectForVideo(videoRef.current, startTimeMs);
         if (handResults.landmarks && handResults.landmarks.length > 0) {
           const hand = handResults.landmarks[0];
           const tip = hand[8];
+          
           const inSelectionZone = checkAirSelection(tip);
+          
           if (!inSelectionZone && isPointing(hand)) {
             drawOnCanvas(tip);
+            // Cursor for drawing (mirrored)
             ctx.fillStyle = selectedColorRef.current === 'CLEAR' ? '#fff' : selectedColorRef.current;
             ctx.beginPath();
-            ctx.arc(tip.x * width, tip.y * height, 15, 0, Math.PI * 2);
+            ctx.arc((1 - tip.x) * width, tip.y * height, 15, 0, Math.PI * 2);
             ctx.fill();
           } else {
             lastPointRef.current = null;
             if (inSelectionZone) {
+              // Selection cursor (raw x)
               ctx.strokeStyle = '#fff';
               ctx.lineWidth = 4;
               ctx.beginPath();
-              ctx.arc(tip.x * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgress / 100));
+              ctx.arc((1 - tip.x) * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgress / 100));
               ctx.stroke();
             } else {
+              // Hover cursor
               ctx.strokeStyle = 'rgba(255,255,255,0.4)';
               ctx.lineWidth = 2;
               ctx.beginPath();
-              ctx.arc(tip.x * width, tip.y * height, 10, 0, Math.PI * 2);
+              ctx.arc((1 - tip.x) * width, tip.y * height, 10, 0, Math.PI * 2);
               ctx.stroke();
             }
           }
