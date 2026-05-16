@@ -42,7 +42,10 @@ const HandTracker = () => {
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
         );
         const handModel = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: "/hand_landmarker.task", delegate: "GPU" },
+          baseOptions: { 
+            modelAssetPath: "hand_landmarker.task", 
+            delegate: "GPU" 
+          },
           runningMode: "video",
           numHands: 2,
         });
