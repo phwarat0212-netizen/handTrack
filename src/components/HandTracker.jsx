@@ -58,7 +58,7 @@ const HandTracker = () => {
             delegate: "GPU" 
           },
           runningMode: "video",
-          numHands: 2,
+          numHands: 1,
         });
         setHandLandmarker(handModel);
         setDebugStatus("AI Ready.");
@@ -78,7 +78,11 @@ const HandTracker = () => {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 }
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 360 },
+          facingMode: "user"
+        }
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
