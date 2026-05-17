@@ -20,6 +20,8 @@ const HandTracker = () => {
   const selectedColorRef = useRef('#00f2ff');
   const lastPointRef = useRef(null);
   const requestRef = useRef();
+  const hoverProgressRef = useRef(0);
+  const hoverTargetRef = useRef(null);
 
   const colors = [
     { name: 'Cyan', hex: '#00f2ff' },
@@ -102,28 +104,38 @@ const HandTracker = () => {
     const y = point.y;
     
     if (y < 0.22) { 
-      const startX = 0.38;
-      const endX = 0.62;
+      const startX = 0.406;
+      const endX = 0.594;
       if (x > startX && x < endX) {
         const relativeX = (x - startX) / (endX - startX);
         const index = Math.floor(relativeX * colors.length);
         if (index >= 0 && index < colors.length) {
           const color = colors[index];
+          
           setHoverTarget(color.hex);
-          setHoverProgress(prev => {
-            if (prev >= 100) {
-              if (color.hex === 'CLEAR') clearCanvas();
-              else setSelectedColor(color.hex);
-              return 0;
+          hoverTargetRef.current = color.hex;
+          
+          const nextProgress = hoverProgressRef.current + 12;
+          if (nextProgress >= 100) {
+            if (color.hex === 'CLEAR') {
+              clearCanvas();
+            } else {
+              setSelectedColor(color.hex);
             }
-            return prev + 12;
-          });
+            setHoverProgress(0);
+            hoverProgressRef.current = 0;
+          } else {
+            setHoverProgress(nextProgress);
+            hoverProgressRef.current = nextProgress;
+          }
           return true;
         }
       }
     }
     setHoverTarget(null);
+    hoverTargetRef.current = null;
     setHoverProgress(0);
+    hoverProgressRef.current = 0;
     return false;
   };
 
@@ -180,7 +192,7 @@ const HandTracker = () => {
               ctx.strokeStyle = '#fff';
               ctx.lineWidth = 4;
               ctx.beginPath();
-              ctx.arc(tip.x * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgress / 100));
+              ctx.arc(tip.x * width, tip.y * height, 20, 0, Math.PI * 2 * (hoverProgressRef.current / 100));
               ctx.stroke();
             } else {
               // Hover cursor
