@@ -31,6 +31,7 @@ const HandTracker = () => {
   const requestRef = useRef();
   const hoverProgressRef = useRef(0);
   const hoverTargetRef = useRef(null);
+  const smoothedPointRef = useRef(null);
 
   const colors = [
     { name: 'Cyan', hex: '#00f2ff' },
@@ -157,9 +158,21 @@ const HandTracker = () => {
     const ctx = drawingCanvasRef.current.getContext('2d');
     const { width, height } = drawingCanvasRef.current;
     
-    // For mirrored drawing (CSS flips it), use direct point.x
-    const x = point.x * width;
-    const y = point.y * height;
+    // Low-pass filter (Exponential Moving Average) to eliminate coordinate jitter
+    const alpha = 0.28; // 0.28 is the perfect sweet spot for butter-smooth lines with zero delay
+    
+    const currentX = point.x * width;
+    const currentY = point.y * height;
+    
+    if (!smoothedPointRef.current) {
+      smoothedPointRef.current = { x: currentX, y: currentY };
+    } else {
+      smoothedPointRef.current.x = smoothedPointRef.current.x * (1 - alpha) + currentX * alpha;
+      smoothedPointRef.current.y = smoothedPointRef.current.y * (1 - alpha) + currentY * alpha;
+    }
+    
+    const x = smoothedPointRef.current.x;
+    const y = smoothedPointRef.current.y;
     
     if (lastPointRef.current) {
       ctx.beginPath();
@@ -167,11 +180,11 @@ const HandTracker = () => {
       ctx.lineWidth = 12;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.moveTo(lastPointRef.current.x * width, lastPointRef.current.y * height);
+      ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
       ctx.lineTo(x, y);
       ctx.stroke();
     }
-    lastPointRef.current = point;
+    lastPointRef.current = { x, y };
   };
 
   const detect = async () => {
@@ -226,6 +239,7 @@ const HandTracker = () => {
             ctx.fill();
           } else {
             lastPointRef.current = null;
+            smoothedPointRef.current = null;
             if (inSelectionZone) {
               // Selection cursor (mirrored view)
               ctx.strokeStyle = '#fff';
@@ -244,6 +258,7 @@ const HandTracker = () => {
           }
         } else {
           lastPointRef.current = null;
+          smoothedPointRef.current = null;
           setHoverTarget(null);
         }
       }
