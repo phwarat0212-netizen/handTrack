@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
+const HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+  [0, 5], [5, 6], [6, 7], [7, 8], // Index Finger
+  [9, 10], [10, 11], [11, 12],     // Middle Finger
+  [13, 14], [14, 15], [15, 16],    // Ring Finger
+  [0, 17], [17, 18], [18, 19], [19, 20], // Pinky Finger
+  [5, 9], [9, 13], [13, 17]        // Palm / Knuckles
+];
+
 const HandTracker = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -173,6 +182,32 @@ const HandTracker = () => {
       if (handLandmarker) {
         const handResults = await handLandmarker.detectForVideo(videoRef.current, startTimeMs);
         if (handResults.landmarks && handResults.landmarks.length > 0) {
+          // Draw Hand Skeleton & Joints for all detected hands
+          handResults.landmarks.forEach((hand) => {
+            // Draw skeleton lines
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.55)';
+            ctx.lineCap = 'round';
+            HAND_CONNECTIONS.forEach(([startIdx, endIdx]) => {
+              const startPt = hand[startIdx];
+              const endPt = hand[endIdx];
+              if (startPt && endPt) {
+                ctx.beginPath();
+                ctx.moveTo(startPt.x * width, startPt.y * height);
+                ctx.lineTo(endPt.x * width, endPt.y * height);
+                ctx.stroke();
+              }
+            });
+
+            // Draw joint dots
+            ctx.fillStyle = '#ffffff';
+            hand.forEach((joint) => {
+              ctx.beginPath();
+              ctx.arc(joint.x * width, joint.y * height, 4, 0, Math.PI * 2);
+              ctx.fill();
+            });
+          });
+
           const hand = handResults.landmarks[0];
           const tip = hand[8];
           
